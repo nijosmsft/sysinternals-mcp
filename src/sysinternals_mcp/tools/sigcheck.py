@@ -15,7 +15,7 @@ from sysinternals_mcp.parsing.sigcheck_parser import parse_sigcheck_csv
 from sysinternals_mcp.tools._common import (
     ToolError,
     format_subprocess_error,
-    remote_command_block,
+    lablink_first_remote_block,
     require_binary,
     run_subprocess,
     validate_target,
@@ -91,8 +91,11 @@ def sigcheck(path: str, target: str = "local") -> str:
         return (
             f"**`sigcheck` -- remote target** (path=`{path}`)\n"
             "\n"
-            + remote_command_block(
+            + lablink_first_remote_block(
                 cmdline,
+                parse_with="parse_sigcheck_output",
+                expected_runtime_s=3,
+                timeout_s=120,
                 note=(
                     "Pipe the captured stdout (CSV) into "
                     "`parse_sigcheck_output(text=...)` to get the same "
