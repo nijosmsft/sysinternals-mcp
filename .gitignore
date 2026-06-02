@@ -1,0 +1,38 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / build
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual envs / uv
+.venv/
+.uv/
+uv.lock
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local scratch
+*.tmp
+*.bak
+scratch/
