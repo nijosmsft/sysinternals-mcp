@@ -116,6 +116,47 @@ def test_rules_to_cli_args_empty() -> None:
     assert rules_to_cli_args([]) == []
 
 
+def test_parse_pmcx_text_rejects_value_with_semicolon() -> None:
+    """ProcMon's /Filter CLI uses ';' as separator with no escape syntax.
+
+    A value like ``foo;bar`` would silently corrupt the rule on the
+    command line, so :func:`parse_pmcx_text` must raise at recipe-
+    load time with a message naming the offending rule.
+    """
+    import pytest
+
+    text = "[Includes]\nProcess Name is bad;value;here\n"
+    with pytest.raises(ValueError) as exc_info:
+        parse_pmcx_text(text)
+    msg = str(exc_info.value)
+    assert "value" in msg.lower()
+    assert "bad;value;here" in msg
+    assert "Process Name" in msg
+    assert ";" in msg
+
+
+def test_parse_pmcx_text_rejects_column_with_semicolon() -> None:
+    """Pathological case: a column name containing ';' must also be rejected."""
+    import pytest
+
+    # Construct a degenerate descriptor where the column name itself
+    # contains a literal ``;``. The leading section keeps the parser
+    # in the right state.
+    text = "[Includes]\nProc;Name contains chrome\n"
+    with pytest.raises(ValueError) as exc_info:
+        parse_pmcx_text(text)
+    assert "Proc;Name" in str(exc_info.value)
+
+
+def test_parse_pmcx_text_accepts_value_without_semicolon() -> None:
+    """Sanity: harmless values still parse cleanly."""
+    rules = parse_pmcx_text(
+        "[Includes]\nProcess Name is chrome.exe\n"
+    )
+    assert len(rules) == 1
+    assert rules[0].value == "chrome.exe"
+
+
 def test_shipped_recipes_all_parse_to_nonempty_rules() -> None:
     """Every shipped recipe must produce at least one filter rule."""
     from sysinternals_mcp.profiles.metadata import (
@@ -132,3 +173,4 @@ def test_shipped_recipes_all_parse_to_nonempty_rules() -> None:
             arg = r.to_cli_arg()
             assert ";" in arg
             assert arg.endswith(("Include", "Exclude"))
+

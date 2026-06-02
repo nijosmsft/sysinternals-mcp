@@ -59,14 +59,22 @@ def accept_sysinternals_eula(
             f"Valid: {', '.join(VALID_SCOPES)}."
         )
 
-    script = _build_accept_script(scope.lower())
+    # Normalize once at function entry so every downstream comparison
+    # (script build, note text, elevation hint) sees the same value.
+    # The previous code lowered ``scope`` only for the script build and
+    # one comparison, leaving ``'HKLM' if scope == 'machine' else 'HKCU'``
+    # case-sensitive -- ``scope='Machine'`` produced an HKLM script
+    # alongside an HKCU note.
+    scope_norm = scope.lower()
+    script = _build_accept_script(scope_norm)
+    root = "HKLM" if scope_norm == "machine" else "HKCU"
     note = (
         "After running, every Sysinternals binary will see "
         f"`EulaAccepted=1` under "
-        f"`{'HKLM' if scope == 'machine' else 'HKCU'}\\Software\\Sysinternals\\<Tool>` "
+        f"`{root}\\Software\\Sysinternals\\<Tool>` "
         "and will suppress the EULA dialog."
     )
-    if scope.lower() == "machine":
+    if scope_norm == "machine":
         note += " *Requires an elevated PowerShell session.*"
 
     sections: list[str] = []

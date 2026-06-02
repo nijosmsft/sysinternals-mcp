@@ -74,7 +74,15 @@ ProbeFn = Callable[[str], bool]
 
 
 def _winreg_probe(tool_name: str) -> bool:
-    """Read the live HKCU value. Returns False on any error / missing key."""
+    """Read the live HKCU value. Returns False on any error / missing key.
+
+    Catches both ``OSError`` (registry key / value missing, access
+    denied) and ``ValueError`` (the value exists but is not numeric
+    -- e.g. someone hand-edited the registry to a string -- so
+    ``int(value)`` would otherwise raise). In every failure mode we
+    treat the EULA as "not accepted" rather than letting the
+    exception propagate out to the calling tool.
+    """
     if winreg is None:  # non-Windows guard
         return False
     try:
@@ -84,7 +92,7 @@ def _winreg_probe(tool_name: str) -> bool:
         ) as key:
             value, _ = winreg.QueryValueEx(key, "EulaAccepted")  # type: ignore[union-attr]
             return int(value) == 1
-    except OSError:
+    except (OSError, ValueError):
         return False
 
 
@@ -116,9 +124,11 @@ def accept_command(tool_name: str, scope: str = "user") -> str:
         scope: ``"user"`` (default) writes HKCU under the running
             account. ``"machine"`` writes HKLM (requires admin); useful
             when the MCP server runs as SYSTEM and a human operator
-            also runs the tools interactively.
+            also runs the tools interactively. Comparison is
+            case-insensitive: ``"Machine"`` / ``"MACHINE"`` behave the
+            same as ``"machine"``.
     """
-    if scope == "machine":
+    if scope.lower() == "machine":
         root = "HKLM"
     else:
         root = "HKCU"

@@ -44,7 +44,10 @@ class FilterRule:
             ``Process Name``.
         op: ProcMon match operator, e.g. ``contains``, ``is``,
             ``begins with``.
-        value: Match value.
+        value: Match value. Must not contain ``;`` -- ProcMon's
+            ``/Filter`` CLI parser uses ``;`` as the field separator
+            and has no escape syntax, so any embedded semicolon would
+            silently corrupt the rule.
         include: ``True`` for an Include rule, ``False`` for Exclude.
     """
 
@@ -54,7 +57,13 @@ class FilterRule:
     include: bool
 
     def to_cli_arg(self) -> str:
-        """Return the value that follows ``/Filter`` on the command line."""
+        """Return the value that follows ``/Filter`` on the command line.
+
+        Note: callers are responsible for ensuring no field contains
+        a literal ``;``. :func:`parse_pmcx_text` enforces this at
+        recipe-load time; if you construct a :class:`FilterRule`
+        directly, do the same check.
+        """
         kind = "Include" if self.include else "Exclude"
         return f"{self.column};{self.op};{self.value};{kind}"
 
@@ -109,6 +118,13 @@ def parse_pmcx_text(text: str) -> list[FilterRule]:
     Order is preserved: every Include rule appears before any Exclude
     rule in the output list, in the order they appeared inside the
     section. The ``[Capture]`` section is ignored.
+
+    Raises:
+        ValueError: when any rule's column or value contains a literal
+            ``;``. ProcMon's ``/Filter`` CLI uses ``;`` as a field
+            separator with no escape, so a value like ``a;b`` would
+            silently produce an invalid rule. Failing fast at recipe-
+            load time keeps broken filters from reaching ProcMon.
     """
     if not text:
         return []
@@ -135,6 +151,22 @@ def parse_pmcx_text(text: str) -> list[FilterRule]:
                 value=rule.value,
                 include=False,
             )
+        # Fail-fast: ProcMon's /Filter argument is semicolon-separated
+        # with no escape syntax. Reject any rule whose column or value
+        # contains a literal ``;`` -- emitting the rule would silently
+        # corrupt the filter on the command line.
+        for field_name, field_value in (
+            ("column", rule.column),
+            ("value", rule.value),
+        ):
+            if ";" in field_value:
+                raise ValueError(
+                    f"ProcMon filter rule {field_name}={field_value!r} "
+                    f"(column={rule.column!r}, op={rule.op!r}) contains "
+                    "a ';' which ProcMon's /Filter CLI parser uses as "
+                    "a field separator with no escape syntax. Rewrite "
+                    "the rule without semicolons."
+                )
         rules.append(rule)
     return rules
 
