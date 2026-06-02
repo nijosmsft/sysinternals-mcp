@@ -1,0 +1,34 @@
+# ProcMon Recipe: process_lifecycle
+#
+# Text descriptor (see file_io_only.pmcx header for reconstruction
+# instructions).
+#
+# Recipe contract:
+# - Capture only the four lifecycle event classes: process create,
+#   process exit, thread create, thread exit.
+# - Suppress all other event sources to keep the trace tiny.
+
+[Includes]
+Operation contains Process Create
+Operation contains Process Exit
+Operation contains Thread Create
+Operation contains Thread Exit
+Operation contains Load Image
+
+[Excludes]
+Operation contains CreateFile
+Operation contains ReadFile
+Operation contains WriteFile
+Operation contains CloseFile
+Operation contains QueryDirectory
+Operation contains RegQuery
+Operation contains RegOpenKey
+Operation contains RegCloseKey
+Operation contains RegSetValue
+Operation contains TCP
+Operation contains UDP
+Operation contains Process Profiling
+
+[Capture]
+BackingFile suggestion: C:\procmon\process_lifecycle.pml
+Runtime suggestion: 60 seconds

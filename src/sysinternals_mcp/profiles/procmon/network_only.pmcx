@@ -1,0 +1,41 @@
+# ProcMon Recipe: network_only
+#
+# Text descriptor (see file_io_only.pmcx header for reconstruction
+# instructions).
+#
+# Recipe contract:
+# - Capture only TCP* / UDP* operations as ProcMon sees them via the
+#   network filter driver.
+# - ProcMon does not capture kernel-only TCP (drivers talking via
+#   NDIS/WSK without crossing the AFD layer). For that, use ETW /
+#   pktmon -- not this recipe.
+
+[Includes]
+Operation contains TCP Connect
+Operation contains TCP Disconnect
+Operation contains TCP Send
+Operation contains TCP Receive
+Operation contains TCP Accept
+Operation contains TCP Reconnect
+Operation contains TCP Retransmit
+Operation contains TCP TCPCopy
+Operation contains UDP Send
+Operation contains UDP Receive
+
+[Excludes]
+Operation contains CreateFile
+Operation contains ReadFile
+Operation contains WriteFile
+Operation contains CloseFile
+Operation contains RegQuery
+Operation contains RegOpenKey
+Operation contains RegCloseKey
+Operation contains Process Create
+Operation contains Process Exit
+Operation contains Thread Create
+Operation contains Thread Exit
+Operation contains Process Profiling
+
+[Capture]
+BackingFile suggestion: C:\procmon\network.pml
+Runtime suggestion: 60 seconds

@@ -1,0 +1,52 @@
+# ProcMon Recipe: file_io_only
+#
+# This is a *text descriptor*, not ProcMon's undocumented binary .pmc
+# format. The MCP server cannot construct a real .pmc without ProcMon
+# itself, so we ship the filter set as text and the operator
+# reconstructs it in the ProcMon UI (Filter -> Filter...) or via
+# /LoadConfig after generating a binary .pmc once and copying it.
+#
+# To reconstruct in the ProcMon UI:
+# 1. Filter -> Reset Filter (clears defaults).
+# 2. Add each Include rule listed below (Filter -> Filter...).
+# 3. Add each Exclude rule.
+# 4. File -> Save Filter... to persist as a .pmf the GUI understands,
+#    or File -> Export Configuration... to save a .pmc the CLI can
+#    load with /LoadConfig.
+#
+# Recipe contract:
+# - Capture only File-class events.
+# - Suppress noisy event sources: Registry, Network, Process,
+#   Profiling.
+# - Default Result column unfiltered (operator can add
+#   `Result != SUCCESS` post-load if they only want failures).
+
+[Includes]
+Operation contains CreateFile
+Operation contains ReadFile
+Operation contains WriteFile
+Operation contains CloseFile
+Operation contains QueryDirectory
+Operation contains QueryInformationFile
+Operation contains SetInformationFile
+Operation contains FileSystemControl
+Operation contains LockFile
+Operation contains UnlockFile
+
+[Excludes]
+Operation contains RegQuery
+Operation contains RegOpenKey
+Operation contains RegCloseKey
+Operation contains RegSetValue
+Operation contains RegEnumKey
+Operation contains TCP
+Operation contains UDP
+Operation contains Process Create
+Operation contains Process Exit
+Operation contains Thread Create
+Operation contains Thread Exit
+Operation contains Process Profiling
+
+[Capture]
+BackingFile suggestion: C:\procmon\file_io.pml
+Runtime suggestion: 60 seconds
