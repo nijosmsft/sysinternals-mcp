@@ -1,0 +1,10 @@
+RW HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+  R  NT AUTHORITY\NetworkService
+  R  BUILTIN\Users
+
+RW HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+  R  NT AUTHORITY\NetworkService
