@@ -187,7 +187,7 @@ def probe_script(install_dir: str) -> str:
     binaries already exist.
     """
     return f"""$dir = '{install_dir}'
-if (Test-Path "$dir\\handle.exe" -and Test-Path "$dir\\procmon.exe") {{
+if ((Test-Path "$dir\\handle.exe") -and (Test-Path "$dir\\procmon.exe")) {{
     Write-Host "Sysinternals already installed under $dir"
     exit 0
 }} else {{
