@@ -118,3 +118,29 @@ license and are not redistributed.
 
 Topics: `mcp`, `mcp-server`, `windows`, `sysinternals`, `procmon`,
 `ai-tools`.
+
+
+## A11 — EULA-consent UX gated by three flip paths (v0.2)
+
+The v0.2 bootstrap installer (`bootstrap_sysinternals`) and the
+standalone `accept_sysinternals_eula` tool both emit a *CONSENT
+REQUIRED* markdown block by default. The LLM is instructed to read
+this block to the user verbatim and prompt for a Yes / No-but-install /
+Skip-future-prompts response. The block is suppressed only when one
+of the following three flip paths is active:
+
+1. The calling tool passed `accept_eula=True`.
+2. The MCP server's environment has
+   `SYSINTERNALS_MCP_ACCEPT_EULA=1` (any of: 1, true, yes, on).
+3. The LLM previously invoked `accept_sysinternals_eula` for the
+   target and is now passing `accept_eula=True` back in.
+
+This three-path approach lets a user accept once at first install
+(path 1), pre-accept for a whole MCP server session (path 2), or
+pre-accept on the host without doing an install (path 3). The
+Sysinternals EULA flag is a per-binary HKCU value
+`Software\Sysinternals\<Tool>\EulaAccepted=1`; passing
+`accept_eula=True` to `bootstrap_sysinternals` writes the flag
+for every known binary in one step. Machine-wide acceptance
+(`scope='machine'` → HKLM) is documented in the standalone tool
+but flagged as requiring an elevated session.
