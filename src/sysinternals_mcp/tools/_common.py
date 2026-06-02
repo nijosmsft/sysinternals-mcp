@@ -18,6 +18,7 @@ short and focused on parsing.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -158,7 +159,7 @@ def lablink_first_remote_block(
     """
     parts = [_quote(p) for p in cmdline]
     body = " ".join(parts)
-    sidecar = {
+    sidecar: dict[str, object] = {
         "command": body,
         "shell": "powershell",
         "timeout_s": int(timeout_s),
@@ -166,17 +167,12 @@ def lablink_first_remote_block(
     }
     if parse_with:
         sidecar["parse_with"] = parse_with
-    json_lines = ["{"]
-    items = list(sidecar.items())
-    for i, (key, val) in enumerate(items):
-        suffix = "," if i < len(items) - 1 else ""
-        if isinstance(val, int):
-            json_lines.append(f'  "{key}": {val}{suffix}')
-        else:
-            escaped = str(val).replace("\\", "\\\\").replace('"', '\\"')
-            json_lines.append(f'  "{key}": "{escaped}"{suffix}')
-    json_lines.append("}")
-    json_body = "\n".join(json_lines)
+    # json.dumps handles newlines, tabs, embedded quotes, and other
+    # control characters correctly. The hand-rolled encoder this
+    # replaced only escaped backslash and double-quote, so multi-line
+    # ``command`` strings produced JSON with literal LF/CR bytes that
+    # ``json.loads`` rejects.
+    json_body = json.dumps(sidecar, indent=2)
 
     out = [
         "**Recommended dispatch:** LabLink (then PSRemoting, then manual paste).",
