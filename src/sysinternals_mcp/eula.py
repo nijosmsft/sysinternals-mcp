@@ -17,8 +17,15 @@ flag — there is no machine-wide equivalent.
 
 from __future__ import annotations
 
+import os
 import sys
 from typing import Callable
+
+# Env var that lets an operator suppress the bootstrap consent prompt
+# globally for an MCP server install. See
+# ``bootstrap_sysinternals`` / ``accept_sysinternals_eula`` for the
+# three flip paths (arg / env var / standalone tool).
+EULA_PRE_ACCEPT_ENV_VAR = "SYSINTERNALS_MCP_ACCEPT_EULA"
 
 # winreg is Windows-only. Tests on non-Windows hosts get a stub that
 # always reports ``not accepted`` so the rest of the module still loads.
@@ -47,6 +54,13 @@ def tool_subkey(tool_name: str) -> str:
         "pslist": "PsList",
         "accesschk": "AccessChk",
         "procmon": "Process Monitor",
+        "autorunsc": "AutoRuns",
+        "coreinfo": "Coreinfo",
+        "listdlls": "ListDLLs",
+        "procdump": "ProcDump",
+        "psinfo": "PsInfo",
+        "strings": "Strings",
+        "tcpvcon": "TcpView",
     }.get(stem, stem.capitalize())
 
 
@@ -60,7 +74,15 @@ ProbeFn = Callable[[str], bool]
 
 
 def _winreg_probe(tool_name: str) -> bool:
-    """Read the live HKCU value. Returns False on any error / missing key."""
+    """Read the live HKCU value. Returns False on any error / missing key.
+
+    Catches both ``OSError`` (registry key / value missing, access
+    denied) and ``ValueError`` (the value exists but is not numeric
+    -- e.g. someone hand-edited the registry to a string -- so
+    ``int(value)`` would otherwise raise). In every failure mode we
+    treat the EULA as "not accepted" rather than letting the
+    exception propagate out to the calling tool.
+    """
     if winreg is None:  # non-Windows guard
         return False
     try:
@@ -70,7 +92,7 @@ def _winreg_probe(tool_name: str) -> bool:
         ) as key:
             value, _ = winreg.QueryValueEx(key, "EulaAccepted")  # type: ignore[union-attr]
             return int(value) == 1
-    except OSError:
+    except (OSError, ValueError):
         return False
 
 
@@ -94,23 +116,47 @@ def is_accepted(tool_name: str) -> bool:
     return _probe(tool_name)
 
 
-def accept_command(tool_name: str) -> str:
+def accept_command(tool_name: str, scope: str = "user") -> str:
     """Return a paste-ready ``reg add`` command that pre-accepts the EULA.
 
-    The emitted command targets HKCU so it accepts the EULA under the
-    running account — exactly what the MCP server needs when it runs
-    as a service under a non-interactive identity.
+    Args:
+        tool_name: Sysinternals binary name (with or without ``.exe``).
+        scope: ``"user"`` (default) writes HKCU under the running
+            account. ``"machine"`` writes HKLM (requires admin); useful
+            when the MCP server runs as SYSTEM and a human operator
+            also runs the tools interactively. Comparison is
+            case-insensitive: ``"Machine"`` / ``"MACHINE"`` behave the
+            same as ``"machine"``.
     """
+    if scope.lower() == "machine":
+        root = "HKLM"
+    else:
+        root = "HKCU"
     return (
-        f'reg add "HKCU\\{reg_path(tool_name)}" '
+        f'reg add "{root}\\{reg_path(tool_name)}" '
         f'/v EulaAccepted /t REG_DWORD /d 1 /f'
     )
 
 
+def is_eula_pre_accepted() -> bool:
+    """Return True when the operator has set the global pre-accept env var.
+
+    When this returns True, ``bootstrap_sysinternals`` and
+    ``accept_sysinternals_eula`` skip their CONSENT REQUIRED prompts
+    and proceed directly to emit install / reg-add commands. This is
+    the "skip this prompt for all future installs in this MCP server"
+    flip path documented in the bootstrap UX.
+    """
+    val = os.environ.get(EULA_PRE_ACCEPT_ENV_VAR, "").strip().lower()
+    return val in {"1", "true", "yes", "on"}
+
+
 __all__ = [
+    "EULA_PRE_ACCEPT_ENV_VAR",
     "SYSINTERNALS_REG_ROOT",
     "accept_command",
     "is_accepted",
+    "is_eula_pre_accepted",
     "reg_path",
     "reset_probe",
     "set_probe",

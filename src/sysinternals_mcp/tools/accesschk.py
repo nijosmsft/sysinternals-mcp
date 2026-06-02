@@ -13,7 +13,7 @@ from sysinternals_mcp.parsing.accesschk_parser import parse_accesschk_text
 from sysinternals_mcp.tools._common import (
     ToolError,
     format_subprocess_error,
-    remote_command_block,
+    lablink_first_remote_block,
     require_binary,
     run_subprocess,
     validate_target,
@@ -24,12 +24,15 @@ _TOOL = "accesschk.exe"
 # Access-mode preset -> accesschk flags. ``rw`` is the broadest "who has
 # write access" triage view; ``r`` is read-only audit; ``all`` dumps
 # every ACE without filtering; ``effective`` includes effective
-# permissions (-e).
+# permissions (-e); ``reg`` audits a registry key (-k); ``svc`` audits
+# a Windows service (-c).
 _ACCESS_MODES: dict[str, list[str]] = {
     "rw": ["-w", "-s", "-q"],
     "r": ["-r", "-s", "-q"],
     "all": ["-s", "-q"],
     "effective": ["-e", "-s", "-q"],
+    "reg": ["-k", "-w", "-s", "-q"],
+    "svc": ["-c", "-w", "-q"],
 }
 
 
@@ -45,8 +48,9 @@ def _build_cmdline(binary: str, path: str, access: str) -> list[str] | str:
             f"Unknown access mode `{access}`. Valid: {valid}. "
             "`rw` = who has write access (default), `r` = read-only "
             "audit, `all` = every ACE, `effective` = effective "
-            "permissions."
-        )
+                "permissions, `reg` = registry key (-k), `svc` = service "
+                "(-c)."
+            )
     return [binary, "-accepteula", "-nobanner", *flags, path]
 
 
@@ -75,7 +79,9 @@ def accesschk(path: str, access: str = "rw", target: str = "local") -> str:
             the service short name.
         access: One of ``"rw"`` (who has write access, default),
             ``"r"`` (read-only audit), ``"all"`` (every ACE),
-            ``"effective"`` (effective permissions).
+            ``"effective"`` (effective permissions), ``"reg"``
+            (registry key audit via ``-k``), ``"svc"`` (Windows
+            service audit via ``-c``).
         target: ``"local"`` runs the binary on this machine.
             ``"remote"`` returns the command line for another host.
     """
@@ -95,8 +101,11 @@ def accesschk(path: str, access: str = "rw", target: str = "local") -> str:
             f"**`accesschk` -- remote target** "
             f"(path=`{path}`, access=`{access}`)\n"
             "\n"
-            + remote_command_block(
+            + lablink_first_remote_block(
                 cmdline_template,
+                parse_with="parse_accesschk_output",
+                expected_runtime_s=4,
+                timeout_s=180,
                 note=(
                     "Pipe the captured stdout into "
                     "`parse_accesschk_output(text=...)` to get the same "

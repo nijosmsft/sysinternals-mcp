@@ -1,0 +1,8 @@
+RW Spooler
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+  R  NT AUTHORITY\Authenticated Users
+
+RW LanmanServer
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators

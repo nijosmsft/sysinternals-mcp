@@ -1,0 +1,15 @@
+Strings v2.54 - Search for ANSI and UNICODE strings in binary images.
+Copyright (C) 1999-2024 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+!This program cannot be run in DOS mode.
+RichPE
+.text
+`.rdata
+@.data
+.pdata
+@.rsrc
+@.reloc
+HelloWorld
+ConfigPath
+Microsoft Corporation

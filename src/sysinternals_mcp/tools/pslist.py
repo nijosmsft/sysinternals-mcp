@@ -8,7 +8,7 @@ from sysinternals_mcp.parsing.pslist_parser import apply_filter, parse_pslist_te
 from sysinternals_mcp.tools._common import (
     ToolError,
     format_subprocess_error,
-    remote_command_block,
+    lablink_first_remote_block,
     require_binary,
     run_subprocess,
     validate_target,
@@ -64,8 +64,11 @@ def pslist(filter: str = "", target: str = "local") -> str:
         return (
             f"**`pslist` -- remote target** (filter=`{filter}`)\n"
             "\n"
-            + remote_command_block(
+            + lablink_first_remote_block(
                 cmdline,
+                parse_with="parse_pslist_output",
+                expected_runtime_s=2,
+                timeout_s=30,
                 note=(
                     "Pipe the captured stdout into "
                     "`parse_pslist_output(text=...)`. The `filter` arg "

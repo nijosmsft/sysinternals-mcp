@@ -1,0 +1,33 @@
+Coreinfo v3.6 - Logical Processor / Cache Configuration Tool
+Copyright (C) 2008-2024 Mark Russinovich
+
+Intel(R) Xeon(R) Silver 4316 CPU @ 2.30GHz
+Intel64 Family 6 Model 106 Stepping 6, GenuineIntel
+Microcode signature: 0D000363
+HTT             *       Hyperthreading enabled
+HYPERVISOR      -       Hypervisor is present
+VMX             *       Supports Intel hardware-assisted virtualization
+EM64T           *       Supports 64-bit mode
+SMX             -       Supports Safer Mode Extensions
+SGX             -       Supports Software Guard Extensions
+XD              *       Supports eXecute Disable bit
+PGE             *       Supports global bit in page tables
+SSE             *       Supports SSE instructions
+SSE2            *       Supports SSE2 instructions
+AVX             *       Supports AVX instructions
+AVX2            *       Supports AVX2 instructions
+AES             *       Supports AES extensions
+
+Logical Processor to Socket Map:
+********--------------------------------  Socket 0
+--------********------------------------  Socket 1
+
+Logical Processor to NUMA Node Map:
+********--------------------------------  NUMA Node 0
+--------********------------------------  NUMA Node 1
+
+Logical Processor to Cache Map:
+**------------------------------------  Data Cache          0, Level 1,   48 KB, Assoc  12, LineSize  64
+**------------------------------------  Instruction Cache   0, Level 1,   32 KB, Assoc   8, LineSize  64
+****----------------------------------  Unified Cache       0, Level 2, 1280 KB, Assoc  20, LineSize  64
+********------------------------------  Unified Cache       1, Level 3, 30720 KB, Assoc  15, LineSize  64

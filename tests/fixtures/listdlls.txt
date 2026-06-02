@@ -1,0 +1,22 @@
+ListDLLs v3.3 - List loaded modules
+Copyright (C) 1997-2024 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+------------------------------------------------------------------------------
+explorer.exe pid: 3204
+Command line: C:\Windows\Explorer.EXE
+
+       Base                Size      Path
+    0x00007ff7c2b40000    0x52000    C:\Windows\explorer.exe
+    0x00007ffd7d3a0000   0x213000    C:\Windows\SYSTEM32\ntdll.dll
+    0x00007ffd7c460000    0xc7000    C:\Windows\System32\KERNEL32.DLL
+    0x00007ffd7b9c0000   0x108000    C:\Windows\System32\USER32.DLL
+
+------------------------------------------------------------------------------
+notepad.exe pid: 5120
+Command line: notepad.exe
+
+       Base                Size      Path
+    0x00007ff7a2880000    0x4d000    C:\Windows\System32\notepad.exe
+    0x00007ffd7d3a0000   0x213000    C:\Windows\SYSTEM32\ntdll.dll
+    0x00007ffd7c460000    0xc7000    C:\Windows\System32\KERNEL32.DLL

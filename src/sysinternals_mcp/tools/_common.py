@@ -18,6 +18,7 @@ short and focused on parsing.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -101,10 +102,118 @@ def remote_command_block(cmdline: list[str], note: str = "") -> str:
 
     The command line is quoted so spaces in paths survive a paste into a
     PowerShell prompt.
+
+    NOTE: most v0.2 tools call :func:`lablink_first_remote_block`
+    instead, which leads with a LabLink dispatch recommendation and
+    appends a JSON sidecar an LLM can hand straight to an MCP that
+    actually has remote-execution tools. This raw helper is kept for
+    callers that just want the PowerShell fence without the transport
+    recommendation block (e.g. tools that emit several commands in a
+    sequence).
     """
     parts = [_quote(p) for p in cmdline]
     body = " ".join(parts)
     out = ["```powershell", body, "```"]
+    if note:
+        out.append("")
+        out.append(note)
+    return "\n".join(out)
+
+
+def lablink_first_remote_block(
+    cmdline: list[str] | None = None,
+    *,
+    script_body: str | None = None,
+    parse_with: str | None = None,
+    expected_runtime_s: int = 5,
+    timeout_s: int = 60,
+    note: str = "",
+) -> str:
+    """Render a LabLink-first remote-execution markdown block.
+
+    Sysinternals MCP has zero coupling to any specific remote-exec
+    transport (no Python ``import lablink``, no env var referencing
+    LabLink, no calls). This helper just *names* LabLink as the
+    recommended dispatch when an LLM needs to execute the emitted
+    command on another host, with PSRemoting and manual paste as
+    fallbacks. The shape is deliberately stable so an LLM can:
+
+    - read the prose "use LabLink first";
+    - peel off the fenced ```json`` sidecar and pass the dict straight
+      to a remote-exec MCP (``lablink.execute_command(...)``,
+      ``ssh.run(...)``, etc.);
+    - or just paste the ```powershell`` block manually.
+
+    The JSON sidecar fields match the LabLink ``execute_command``
+    schema (``node``, ``command``, ``shell``, ``timeout``), with the
+    extra ``parse_with`` and ``expected_runtime_s`` hints the LLM can
+    use to drive a follow-up parse tool. ``node`` is intentionally
+    omitted -- the caller supplies it.
+
+    Args:
+        cmdline: Argv list of the command to run on the remote host.
+            Each element is shell-quoted independently via
+            :func:`_quote`. Mutually exclusive with ``script_body`` --
+            exactly one must be supplied. Use this for single-command
+            tools (handle, sigcheck, ...) where the binary + args
+            naturally form an argv list.
+        script_body: A pre-rendered PowerShell script that should be
+            emitted verbatim inside the fenced ```powershell`` block
+            (no per-argv quoting). Mutually exclusive with
+            ``cmdline``. Use this for multi-line install / setup
+            scripts where wrapping the whole body in single quotes
+            via :func:`_quote` would turn it into a string literal
+            that PowerShell evaluates to itself and then discards
+            (i.e. the script does nothing when pasted).
+        parse_with: Optional Sysinternals MCP tool name the caller can
+            use to roundtrip the stdout (e.g. ``"parse_handle_output"``).
+        expected_runtime_s: Rough hint for how long the command takes.
+        timeout_s: Suggested transport timeout.
+        note: Optional trailing prose appended after the JSON sidecar.
+    """
+    if (cmdline is None) == (script_body is None):
+        raise ValueError(
+            "lablink_first_remote_block requires exactly one of "
+            "cmdline= or script_body="
+        )
+    if script_body is not None:
+        body = script_body
+    else:
+        assert cmdline is not None
+        body = " ".join(_quote(p) for p in cmdline)
+    sidecar: dict[str, object] = {
+        "command": body,
+        "shell": "powershell",
+        "timeout_s": int(timeout_s),
+        "expected_runtime_s": int(expected_runtime_s),
+    }
+    if parse_with:
+        sidecar["parse_with"] = parse_with
+    # json.dumps handles newlines, tabs, embedded quotes, and other
+    # control characters correctly. The hand-rolled encoder this
+    # replaced only escaped backslash and double-quote, so multi-line
+    # ``command`` strings produced JSON with literal LF/CR bytes that
+    # ``json.loads`` rejects.
+    json_body = json.dumps(sidecar, indent=2)
+
+    out = [
+        "**Recommended dispatch:** LabLink (then PSRemoting, then manual paste).",
+        "",
+        "1. **LabLink (preferred)** — pass the JSON sidecar below to "
+        "`lablink.execute_command(node=<your-node>, ...)`.",
+        "2. **PSRemoting** — `Invoke-Command -ComputerName <host> "
+        "-ScriptBlock { ... }` with the command body.",
+        "3. **Manual paste** — copy the PowerShell block into a "
+        "console on the target.",
+        "",
+        "```powershell",
+        body,
+        "```",
+        "",
+        "```json",
+        json_body,
+        "```",
+    ]
     if note:
         out.append("")
         out.append(note)
@@ -141,6 +250,7 @@ __all__ = [
     "ToolError",
     "VALID_TARGETS",
     "format_subprocess_error",
+    "lablink_first_remote_block",
     "remote_command_block",
     "require_binary",
     "run_subprocess",

@@ -1,0 +1,34 @@
+PsInfo v1.79 - Local and remote system information viewer
+Copyright (C) 2001-2024 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+System information for \\DESKTOP-ABC:
+Uptime:                    5 days 12 hours 30 minutes 15 seconds
+Kernel version:            Windows 11 Pro, Multiprocessor Free
+Product type:              Professional
+Product version:           10.0
+Service pack:              0
+Kernel build number:       22621
+Registered organization:   Contoso
+Registered owner:          testuser
+IE version:                11.0000
+System root:               C:\Windows
+Processors:                80
+Processor speed:           2.3 GHz
+Processor type:            Intel(R) Xeon(R) Silver 4316 CPU
+Physical memory:           131072 MB
+Video driver:              NVIDIA Quadro RTX 4000
+
+Disk volumes:
+C:  NTFS  931 GB
+D:  NTFS  500 GB
+
+Hotfixes:
+KB5012345
+KB5023456
+KB5034567
+
+Applications:
+Microsoft Visual C++ 2022 Redistributable
+Google Chrome 125.0.6422.142
+Notepad++ 8.6.4

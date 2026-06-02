@@ -81,11 +81,20 @@ def test_search_paths_lists_env_var_when_set(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_known_binaries_includes_each_tool() -> None:
+    # v0.1 set
     assert "handle.exe" in binary_locator.KNOWN_BINARIES
     assert "sigcheck.exe" in binary_locator.KNOWN_BINARIES
     assert "pslist.exe" in binary_locator.KNOWN_BINARIES
     assert "accesschk.exe" in binary_locator.KNOWN_BINARIES
     assert "procmon.exe" in binary_locator.KNOWN_BINARIES
+    # v0.2 additions
+    assert "tcpvcon.exe" in binary_locator.KNOWN_BINARIES
+    assert "autorunsc.exe" in binary_locator.KNOWN_BINARIES
+    assert "coreinfo.exe" in binary_locator.KNOWN_BINARIES
+    assert "listdlls.exe" in binary_locator.KNOWN_BINARIES
+    assert "procdump.exe" in binary_locator.KNOWN_BINARIES
+    assert "psinfo.exe" in binary_locator.KNOWN_BINARIES
+    assert "strings.exe" in binary_locator.KNOWN_BINARIES
 
 
 class _NoShutil:

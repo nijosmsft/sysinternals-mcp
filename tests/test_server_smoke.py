@@ -26,6 +26,7 @@ def test_server_import_registers_expected_tools() -> None:
                 registered = set(inner.keys())
 
     expected = {
+        # v0.1
         "check_sysinternals_setup",
         "handle_list",
         "parse_handle_output",
@@ -42,6 +43,24 @@ def test_server_import_registers_expected_tools() -> None:
         "analyze_pml",
         "get_evidence_status",
         "get_entities",
+        # v0.2 wrappers
+        "tcpvcon",
+        "parse_tcpvcon_output",
+        "autoruns",
+        "parse_autoruns_output",
+        "coreinfo",
+        "parse_coreinfo_output",
+        "psinfo",
+        "parse_psinfo_output",
+        "listdlls",
+        "parse_listdlls_output",
+        "procdump",
+        "parse_procdump_output",
+        "strings",
+        "parse_strings_output",
+        # v0.2 bootstrap UX
+        "bootstrap_sysinternals",
+        "accept_sysinternals_eula",
     }
     missing = expected - registered
     assert not missing, (

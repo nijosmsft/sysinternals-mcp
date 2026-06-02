@@ -15,7 +15,7 @@ from sysinternals_mcp.parsing.handle_parser import (
 from sysinternals_mcp.tools._common import (
     ToolError,
     format_subprocess_error,
-    remote_command_block,
+    lablink_first_remote_block,
     require_binary,
     run_subprocess,
     validate_target,
@@ -79,8 +79,11 @@ def handle_list(process: str = "*", target: str = "local") -> str:
         return (
             f"**`handle_list` -- remote target** (process=`{process}`)\n"
             "\n"
-            + remote_command_block(
+            + lablink_first_remote_block(
                 cmdline,
+                parse_with="parse_handle_output",
+                expected_runtime_s=2 if process != "*" else 10,
+                timeout_s=120,
                 note=(
                     "Pipe the captured stdout into "
                     "`parse_handle_output(text=...)` to get the same "
