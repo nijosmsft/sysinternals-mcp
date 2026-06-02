@@ -74,8 +74,5 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/sysinternals_mcp"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"src/sysinternals_mcp/profiles/procmon" = "sysinternals_mcp/profiles/procmon"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
