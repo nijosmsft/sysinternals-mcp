@@ -181,12 +181,47 @@ def test_remote_command_block_appends_note() -> None:
 
 
 def test_lablink_block_rejects_neither_cmdline_nor_script_body() -> None:
-    """Until CRITICAL 3 lands, the helper requires cmdline; this guards
-    that contract.
+    """The helper requires exactly one of cmdline / script_body.
 
-    After CRITICAL 3 the helper grows a ``script_body`` parameter and
-    requires *exactly one* of cmdline / script_body. Either way it
-    must reject a call with neither.
+    Calling with neither must raise -- either a ``TypeError`` (Python
+    catching a missing required argument) or a ``ValueError`` (the
+    helper's own validation when both default to ``None``).
     """
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, ValueError)):
         lablink_first_remote_block()  # type: ignore[call-arg]
+
+
+def test_lablink_block_rejects_both_cmdline_and_script_body() -> None:
+    """Supplying both cmdline and script_body must raise ValueError."""
+    with pytest.raises(ValueError):
+        lablink_first_remote_block(["handle.exe"], script_body="$x = 1")
+
+
+def test_lablink_block_script_body_emitted_verbatim() -> None:
+    """A multi-line ``script_body`` must appear unquoted in the powershell fence.
+
+    Regression guard for CRITICAL 3: the old code path wrapped the
+    script in single quotes via ``_quote``, turning it into a string
+    literal that PowerShell evaluates to itself and discards. The
+    fixed path emits the script body verbatim so a paste actually
+    runs the program.
+    """
+    script = (
+        "$installDir = 'C:\\Sysinternals'\n"
+        "Invoke-WebRequest -Uri https://x/y.zip -OutFile $installDir\\y.zip\n"
+        "Expand-Archive -Path $installDir\\y.zip -DestinationPath $installDir\n"
+    )
+    out = lablink_first_remote_block(script_body=script, timeout_s=600)
+    ps = _extract_powershell_block(out)
+    # The body must NOT be wrapped in '...' as a single quoted literal.
+    assert not ps.startswith("'"), (
+        "script_body was quote-wrapped; powershell block starts with "
+        f"a single quote. Block:\n{ps}"
+    )
+    # The script content survives verbatim.
+    assert "$installDir = 'C:\\Sysinternals'" in ps
+    assert "Invoke-WebRequest" in ps
+    assert "Expand-Archive" in ps
+    # The JSON sidecar's ``command`` equals the script body byte-for-byte.
+    sidecar = _extract_json_sidecar(out)
+    assert sidecar["command"] == script

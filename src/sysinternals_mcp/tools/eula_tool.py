@@ -77,7 +77,7 @@ def accept_sysinternals_eula(
     if target == "remote":
         sections.append(
             lablink_first_remote_block(
-                [script],
+                script_body=script,
                 parse_with="",
                 expected_runtime_s=3,
                 timeout_s=60,

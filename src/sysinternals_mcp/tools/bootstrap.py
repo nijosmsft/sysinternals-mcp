@@ -126,12 +126,15 @@ def bootstrap_sysinternals(
 
     if target == "remote":
         sections.append("**Install step**")
-        # Use the bash here-doc style for LabLink: we just pass the
-        # PowerShell script as the command. shell='powershell' tells
-        # LabLink to run it via PowerShell.
+        # The install script is a multi-line PowerShell program. Pass
+        # it as ``script_body=`` so the helper emits it verbatim inside
+        # the fenced powershell block. The older ``[script]`` argv form
+        # routed through ``_quote`` which wrapped the whole body in
+        # single quotes, turning it into a string literal that
+        # PowerShell evaluates to itself and discards.
         sections.append(
             lablink_first_remote_block(
-                [script],
+                script_body=script,
                 parse_with="",
                 expected_runtime_s=30,
                 timeout_s=600,

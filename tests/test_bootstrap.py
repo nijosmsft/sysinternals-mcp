@@ -141,6 +141,89 @@ def test_bootstrap_remote_emits_lablink_first_block() -> None:
     assert "```json" in out
 
 
+def test_bootstrap_remote_install_script_is_not_quote_wrapped() -> None:
+    """Regression for CRITICAL 3.
+
+    The install script is a multi-line PowerShell program. The
+    previous code passed it to ``lablink_first_remote_block`` as a
+    single argv element, which wrapped the whole thing in single
+    quotes -- the rendered output then evaluated to a string literal
+    that PowerShell discards. The fix is to pass it as
+    ``script_body=`` so the body is emitted verbatim.
+
+    Walk the rendered remote block, locate the ```powershell`` fence
+    that contains the install script (NOT the small probe fence) and
+    assert: (a) it is not wrapped in single quotes, (b) it starts
+    with the expected ``$installDir =`` assignment, (c) it contains
+    ``Invoke-WebRequest`` as a top-level command, (d) the matching
+    ``json`` sidecar parses and its ``command`` field equals the
+    powershell block content.
+    """
+    import json
+    import re
+
+    out = bootstrap_sysinternals(
+        target="remote", accept_eula=True, force=True
+    )
+    # ``force=True`` suppresses the probe block, so the only
+    # ```powershell`` fence in the output is the install script.
+    ps_blocks = re.findall(r"```powershell\n(.*?)\n```", out, re.DOTALL)
+    json_blocks = re.findall(r"```json\n(.*?)\n```", out, re.DOTALL)
+    assert len(ps_blocks) == 1, (
+        f"expected exactly one ```powershell fence; got "
+        f"{len(ps_blocks)}\nout:\n{out}"
+    )
+    assert len(json_blocks) == 1, (
+        f"expected exactly one ```json fence; got "
+        f"{len(json_blocks)}\nout:\n{out}"
+    )
+    install = ps_blocks[0]
+    sidecar = json.loads(json_blocks[0])
+
+    # (a) Not wrapped in single quotes.
+    assert not install.startswith("'"), (
+        "install script is quote-wrapped (would render as a string "
+        f"literal that PowerShell discards). Script:\n{install}"
+    )
+    # (b) Starts with the install-dir assignment.
+    assert install.lstrip().startswith("$installDir ="), (
+        "install script does not lead with the $installDir "
+        f"assignment. Script:\n{install}"
+    )
+    # (c) Contains Invoke-WebRequest as a top-level command, not as
+    # part of a quoted argument. ``re.MULTILINE`` + line-start anchor
+    # is enough: a top-level command starts a line.
+    assert re.search(r"^Invoke-WebRequest", install, re.MULTILINE), (
+        "install script does not contain Invoke-WebRequest as a "
+        f"top-level command. Script:\n{install}"
+    )
+    # (d) Sidecar ``command`` equals the powershell block content.
+    assert sidecar["command"] == install
+
+
+def test_bootstrap_remote_force_false_emits_probe_and_install_separately() -> None:
+    """Without ``force``, the output should contain both a probe block
+    and an install block. Only the install block goes through the
+    LabLink dispatch helper; the probe is a plain ```powershell``
+    fence used as a runbook step."""
+    import re
+
+    out = bootstrap_sysinternals(
+        target="remote", accept_eula=True, force=False
+    )
+    ps_blocks = re.findall(r"```powershell\n(.*?)\n```", out, re.DOTALL)
+    # Probe + install = 2 powershell fences.
+    assert len(ps_blocks) == 2, (
+        f"expected two powershell fences (probe + install); got "
+        f"{len(ps_blocks)}"
+    )
+    # The probe contains ``Test-Path``, the install contains
+    # ``Invoke-WebRequest`` -- they should not be the same block.
+    probe = next(b for b in ps_blocks if "Test-Path" in b)
+    install = next(b for b in ps_blocks if "Invoke-WebRequest" in b)
+    assert probe != install
+
+
 def test_bootstrap_winget_method_notes_server_core_caveat() -> None:
     out = bootstrap_sysinternals(
         target="local", install_method="winget", accept_eula=True

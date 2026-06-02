@@ -121,8 +121,9 @@ def remote_command_block(cmdline: list[str], note: str = "") -> str:
 
 
 def lablink_first_remote_block(
-    cmdline: list[str],
+    cmdline: list[str] | None = None,
     *,
+    script_body: str | None = None,
     parse_with: str | None = None,
     expected_runtime_s: int = 5,
     timeout_s: int = 60,
@@ -151,14 +152,35 @@ def lablink_first_remote_block(
 
     Args:
         cmdline: Argv list of the command to run on the remote host.
+            Each element is shell-quoted independently via
+            :func:`_quote`. Mutually exclusive with ``script_body`` --
+            exactly one must be supplied. Use this for single-command
+            tools (handle, sigcheck, ...) where the binary + args
+            naturally form an argv list.
+        script_body: A pre-rendered PowerShell script that should be
+            emitted verbatim inside the fenced ```powershell`` block
+            (no per-argv quoting). Mutually exclusive with
+            ``cmdline``. Use this for multi-line install / setup
+            scripts where wrapping the whole body in single quotes
+            via :func:`_quote` would turn it into a string literal
+            that PowerShell evaluates to itself and then discards
+            (i.e. the script does nothing when pasted).
         parse_with: Optional Sysinternals MCP tool name the caller can
             use to roundtrip the stdout (e.g. ``"parse_handle_output"``).
         expected_runtime_s: Rough hint for how long the command takes.
         timeout_s: Suggested transport timeout.
         note: Optional trailing prose appended after the JSON sidecar.
     """
-    parts = [_quote(p) for p in cmdline]
-    body = " ".join(parts)
+    if (cmdline is None) == (script_body is None):
+        raise ValueError(
+            "lablink_first_remote_block requires exactly one of "
+            "cmdline= or script_body="
+        )
+    if script_body is not None:
+        body = script_body
+    else:
+        assert cmdline is not None
+        body = " ".join(_quote(p) for p in cmdline)
     sidecar: dict[str, object] = {
         "command": body,
         "shell": "powershell",
