@@ -22,6 +22,9 @@ import sysinternals_mcp.tools.tcpvcon  # noqa: F401, E402  — v0.2
 import sysinternals_mcp.tools.autoruns  # noqa: F401, E402  — v0.2
 import sysinternals_mcp.tools.coreinfo  # noqa: F401, E402  — v0.2
 import sysinternals_mcp.tools.psinfo  # noqa: F401, E402  — v0.2
+import sysinternals_mcp.tools.listdlls  # noqa: F401, E402  — v0.2
+import sysinternals_mcp.tools.procdump  # noqa: F401, E402  — v0.2
+import sysinternals_mcp.tools.strings  # noqa: F401, E402  — v0.2
 import sysinternals_mcp.tools.evidence  # noqa: F401, E402  — optional evidence-store federation hook
 
 
