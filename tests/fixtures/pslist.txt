@@ -1,0 +1,13 @@
+PsList v1.41 - Process information lister
+Copyright (C) 1999-2023 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+Process information for DESKTOP-ABC:
+
+Name                Pid Pri Thd  Hnd      Priv        CPU Time    Elapsed Time
+Idle                  0   0   8    0         0    00:01:23.456    01:00:00.000
+System                4   8 230 6543       192    00:00:34.567    01:00:00.000
+svchost              852   8  12  450      4096    00:00:01.234    00:55:12.000
+explorer            4520   8  42 1200     45670    00:00:12.345    00:50:00.000
+chrome              7892   8  28  890     78900    00:00:45.678    00:30:00.000
+chrome              7900   8  20  650     35000    00:00:25.000    00:30:00.000

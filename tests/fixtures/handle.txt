@@ -1,0 +1,16 @@
+Nthandle v5.0 - Handle viewer
+Copyright (C) 1997-2022 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+explorer.exe pid: 4520 DESKTOP-ABC\testuser
+   1C: File          (RWD)   C:\Windows
+   28: File          (R--)   C:\Windows\System32
+   54: Key                   HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion
+  218: Section               BaseNamedObjects\__ComCatalogCache__
+  2A4: Mutant                BaseNamedObjects\SM0:4520:WilStaging_02
+
+chrome.exe pid: 7892 DESKTOP-ABC\testuser
+   30: File          (RW-)   C:\Users\testuser\AppData\Local\Google\Chrome
+   58: Event                 BaseNamedObjects\ChromeIPC
+   6C: File          (R--)   C:\Program Files\Google\Chrome\Application\chrome.dll
+   84: Key                   HKCU\Software\Google\Chrome

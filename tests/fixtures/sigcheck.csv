@@ -1,0 +1,3 @@
+"Path","Verified","Date","Publisher","Company","Description","Product","Product Version","File Version","Machine Type","MD5","SHA1","SHA256","IMP","Strong Name"
+"C:\Windows\System32\notepad.exe","Signed","11:45 AM 6/1/2024","Microsoft Windows","Microsoft Corporation","Notepad","Microsoft Windows Operating System","10.0.22621.1","10.0.22621.1","64-bit","ABC123","DEF456","123abc","456def","Valid"
+"C:\Windows\System32\calc.exe","Signed","12:00 PM 6/1/2024","Microsoft Windows","Microsoft Corporation","Calculator","Microsoft Windows Operating System","10.0.22621.1","10.0.22621.1","64-bit","FFF000","000FFF","111222","333444","Valid"
