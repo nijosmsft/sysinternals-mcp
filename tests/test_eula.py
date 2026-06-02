@@ -20,6 +20,32 @@ def test_tool_subkey_known_names() -> None:
     assert eula.tool_subkey("pslist.exe") == "PsList"
     assert eula.tool_subkey("accesschk.exe") == "AccessChk"
     assert eula.tool_subkey("procmon.exe") == "Process Monitor"
+    # v0.2 additions
+    assert eula.tool_subkey("tcpvcon.exe") == "TcpView"
+    assert eula.tool_subkey("autorunsc.exe") == "AutoRuns"
+    assert eula.tool_subkey("coreinfo.exe") == "Coreinfo"
+    assert eula.tool_subkey("listdlls.exe") == "ListDLLs"
+    assert eula.tool_subkey("procdump.exe") == "ProcDump"
+    assert eula.tool_subkey("psinfo.exe") == "PsInfo"
+    assert eula.tool_subkey("strings.exe") == "Strings"
+
+
+def test_accept_command_machine_scope() -> None:
+    cmd = eula.accept_command("handle.exe", scope="machine")
+    assert "HKLM" in cmd
+    assert "HKCU" not in cmd
+    assert "Handle" in cmd
+
+
+def test_is_eula_pre_accepted_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(eula.EULA_PRE_ACCEPT_ENV_VAR, raising=False)
+    assert eula.is_eula_pre_accepted() is False
+    for val in ("1", "true", "yes", "on", "TRUE", "Yes"):
+        monkeypatch.setenv(eula.EULA_PRE_ACCEPT_ENV_VAR, val)
+        assert eula.is_eula_pre_accepted() is True, val
+    for val in ("0", "false", "no", "", "maybe"):
+        monkeypatch.setenv(eula.EULA_PRE_ACCEPT_ENV_VAR, val)
+        assert eula.is_eula_pre_accepted() is False, val
 
 
 def test_tool_subkey_unknown_name_titlecases() -> None:

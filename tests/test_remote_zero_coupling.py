@@ -58,12 +58,15 @@ def test_no_lablink_mention_in_source_modules() -> None:
     describes transport options (PSRemoting / LabLink / scp). Those
     runbooks are explicitly allowed because they're docs-as-tools, not
     imports. We verify this by allowing the substring `LabLink` only
-    inside string literals in `tools/procmon.py` and `app.py` -- every
-    other source file must be free of it.
+    inside the allow-listed modules; every other source file must be
+    free of it.
     """
     allowed = {
         SRC_ROOT / "tools" / "procmon.py",
         SRC_ROOT / "tools" / "setup.py",
+        SRC_ROOT / "tools" / "_common.py",  # v0.2 LabLink-first helper
+        SRC_ROOT / "tools" / "bootstrap.py",  # v0.2 bootstrap runbook
+        SRC_ROOT / "tools" / "eula_tool.py",  # v0.2 EULA-consent prompt
         SRC_ROOT / "app.py",
     }
     offenders: list[Path] = []
@@ -75,6 +78,46 @@ def test_no_lablink_mention_in_source_modules() -> None:
             offenders.append(py)
     assert offenders == [], (
         "Only docs-as-tools modules (tools/procmon.py runbook, "
-        "tools/setup.py remote block, app.py instructions) may "
-        f"mention LabLink. Offenders: {[str(p) for p in offenders]}"
+        "tools/setup.py remote block, tools/_common.py LabLink-first "
+        "helper, tools/bootstrap.py, tools/eula_tool.py, app.py "
+        f"instructions) may mention LabLink. Offenders: {[str(p) for p in offenders]}"
     )
+
+
+def test_json_sidecar_blocks_have_no_python_imports() -> None:
+    """The LabLink-first JSON sidecar emits a remote dispatch payload.
+
+    The sidecar must contain only execute-command primitives -- no
+    Python ``import`` strings that could be mistaken for executable
+    code by an LLM, no ``from X import`` lines, no Python module
+    references. This locks the helper into a transport-agnostic
+    JSON-only shape.
+    """
+    common = SRC_ROOT / "tools" / "_common.py"
+    text = common.read_text(encoding="utf-8")
+    # The helper body is what builds the sidecar; ensure it never
+    # writes "import" or "from X import" into the JSON it emits.
+    # We scan only the lines that look like they construct the JSON
+    # body (the literal "json_lines" list and surrounding format calls).
+    import re
+
+    in_helper = False
+    forbidden_in_emitted_json = ("import ", "from ")
+    for line in text.splitlines():
+        if "def lablink_first_remote_block" in line:
+            in_helper = True
+            continue
+        if in_helper and line.startswith("def ") and "lablink_first" not in line:
+            in_helper = False
+        if not in_helper:
+            continue
+        # We allow these tokens in docstring/comment lines; only check
+        # actual emitted JSON string literals.
+        match = re.search(r'"([^"]*)"', line)
+        if not match:
+            continue
+        emitted = match.group(1)
+        for bad in forbidden_in_emitted_json:
+            assert bad not in emitted, (
+                f"JSON sidecar must not emit Python {bad!r}: {line.strip()}"
+            )

@@ -28,12 +28,22 @@ DEFAULT_PATHS: tuple[str, ...] = (
 # Every Sysinternals binary the server knows about. The setup tool
 # walks this list; individual tool modules reference the names
 # directly. Keep alphabetical.
+#
+# v0.2 added: autorunsc, coreinfo, listdlls, procdump, psinfo,
+# strings, tcpvcon.
 KNOWN_BINARIES: tuple[str, ...] = (
     "accesschk.exe",
+    "autorunsc.exe",
+    "coreinfo.exe",
     "handle.exe",
-    "pslist.exe",
+    "listdlls.exe",
+    "procdump.exe",
     "procmon.exe",
+    "psinfo.exe",
+    "pslist.exe",
     "sigcheck.exe",
+    "strings.exe",
+    "tcpvcon.exe",
 )
 
 

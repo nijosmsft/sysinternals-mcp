@@ -22,11 +22,18 @@ def fake_sysinternals_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pa
     exercise binary discovery without invoking a real subprocess.
     """
     binaries = (
-        "handle.exe",
-        "sigcheck.exe",
-        "pslist.exe",
         "accesschk.exe",
+        "autorunsc.exe",
+        "coreinfo.exe",
+        "handle.exe",
+        "listdlls.exe",
+        "procdump.exe",
         "procmon.exe",
+        "psinfo.exe",
+        "pslist.exe",
+        "sigcheck.exe",
+        "strings.exe",
+        "tcpvcon.exe",
     )
     for name in binaries:
         (tmp_path / name).write_bytes(b"")
