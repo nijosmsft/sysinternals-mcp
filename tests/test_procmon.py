@@ -76,6 +76,39 @@ def test_capture_commands_remote_emits_block() -> None:
     assert "30" in out
 
 
+def test_capture_commands_emits_filter_args_inline() -> None:
+    """v0.2: recipe filters are translated to /Filter args inline."""
+    out = get_procmon_capture_commands(
+        recipe="network_only",
+        output_path=r"C:\tmp\net.pml",
+        duration_s=30,
+        target="remote",
+    )
+    # network_only includes TCP* / UDP*
+    assert "/Filter" in out
+    assert "TCP Connect" in out
+    assert "UDP" in out
+    assert "Include" in out
+    assert "Exclude" in out
+    # Headline note advertising the v0.2 change
+    assert "Filter rules applied inline via `/Filter`" in out
+    assert "No GUI step or `.pmc` file is required." in out
+
+
+def test_capture_commands_filter_rules_for_file_io() -> None:
+    out = get_procmon_capture_commands(
+        recipe="file_io_only",
+        target="remote",
+    )
+    assert "/Filter" in out
+    assert "CreateFile" in out
+    assert "ReadFile" in out
+    assert "WriteFile" in out
+    # Exclude rules are present too
+    assert "RegQuery" in out or "RegOpenKey" in out
+    assert "Exclude" in out
+
+
 def test_capture_commands_unknown_recipe() -> None:
     out = get_procmon_capture_commands(recipe="nope", target="remote")
     assert "Unknown recipe" in out
@@ -90,10 +123,12 @@ def test_capture_instructions_local_runbook() -> None:
     assert "check_sysinternals_setup" in out
     assert "analyze_pml" in out
     assert r"C:\tmp\fio.pml" in out
+    # v0.2: runbook no longer mentions a "load filter set" GUI step.
+    assert "Filter -> Filter..." not in out
 
 
 def test_capture_instructions_remote_names_three_transports() -> None:
-    """The runbook must name PSRemoting, LabLink (as one example), and manual."""
+    """The runbook names LabLink first, then PSRemoting, then manual."""
     out = get_capture_instructions(
         recipe="process_lifecycle",
         target="remote",
@@ -102,11 +137,13 @@ def test_capture_instructions_remote_names_three_transports() -> None:
 
     assert "# Remote ProcMon capture runbook" in out
     assert "PSRemoting" in out
-    # Naming LabLink in docs is OK; coupling in source is not.
+    # LabLink is the recommended dispatch in v0.2.
     assert "LabLink" in out
-    # Make sure we describe it as "one example", not the default.
-    assert "any other agent" in out or "no dependency" in out
+    # Make sure we describe transport flexibility.
+    assert "no Python dependency on LabLink" in out or "no dependency" in out
     assert "Manual" in out or "SMB" in out
+    # v0.2: pre-load step is gone.
+    assert "Pre-load the filter set" not in out
 
 
 def test_classify_op_buckets() -> None:

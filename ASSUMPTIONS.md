@@ -13,7 +13,13 @@ either duplicate the evidence-store DuckDB schema or shell out to a
 Python helper to participate in federation; both are worse than
 staying in Python.
 
-## A2 — ProcMon `.pmc` binary format: deferred
+## A2 — ProcMon `.pmc` binary format: deferred (RESOLVED in v0.2)
+
+**v0.2 status: RESOLVED via CLI driver.** ``get_procmon_capture_commands``
+now parses the ``.pmcx`` text descriptor into ProcMon ``/Filter`` CLI
+args and splices them into the command line inline. No GUI step and
+no binary ``.pmc`` file are required to apply a recipe. The historic
+problem and resolution are kept below for context.
 
 ProcMon's `.pmc` (Process Monitor Configuration) file is an
 undocumented binary format. The canonical way to produce one is to
@@ -21,29 +27,24 @@ run ProcMon, configure filters in the UI, and `File → Export
 Configuration`. There is no Microsoft-supported library that emits
 `.pmc` programmatically.
 
-For v0.1 we ship **text descriptors** of the three recipes (operation
+v0.1 shipped **text descriptors** of the three recipes (operation
 name, column whitelist, brief docstring) under
 `src/sysinternals_mcp/profiles/procmon/<recipe>.pmcx` (the `.pmcx`
 extension makes it explicit these are not native `.pmc` files). The
-loading workflow is:
+loading workflow at the time required:
 
 1. The operator opens ProcMon manually.
 2. **File → Filter** and applies the operation/process filters
-   described in the `.pmcx` descriptor (or runs ProcMon with
-   `/Filter` parameters built from the descriptor).
+   described in the `.pmcx` descriptor.
 3. The capture commands use `/AcceptEula /BackingFile <out> /Quiet`
    to start the capture in non-interactive mode.
 
-This is a known limitation. v0.2 candidates:
-
-- Wrap the (community-maintained) `procmon-parser` for read-only
-  parsing — it is the only Python library that has ever decoded
-  `.pmc`. Last release Dec 2022.
-- Generate `.pmc` once via ProcMon UI and bundle the binaries.
-  Costs maintenance burden when ProcMon changes its format.
-- Drive ProcMon entirely from `/Filter` command-line parameters and
-  skip the `.pmc` file altogether. Possible but more verbose for
-  multi-filter recipes.
+v0.2 closes the gap by parsing the descriptor's ``[Includes]`` /
+``[Excludes]`` sections (``parsing/procmon_filter.py``) into
+:class:`FilterRule` objects, then emitting one ``/Filter
+"<col>;<op>;<val>;<Include|Exclude>"`` token per rule. Operators may
+still use ``/LoadConfig <path>.pmc`` if they prefer the binary form;
+both paths produce equivalent filter sets.
 
 ## A3 — `analyze_pml` rounds through ProcMon's `/SaveAs` CSV
 

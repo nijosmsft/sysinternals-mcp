@@ -22,6 +22,10 @@ import pandas as pd
 from sysinternals_mcp.app import mcp
 from sysinternals_mcp.formatting.markdown import format_table
 from sysinternals_mcp.parsing.pml_parser import analyze_pml_file
+from sysinternals_mcp.parsing.procmon_filter import (
+    parse_pmcx_text,
+    rules_to_cli_args,
+)
 from sysinternals_mcp.profiles.metadata import (
     RECIPES,
     RecipeMeta,
@@ -105,17 +109,25 @@ def _capture_cmdline(
     recipe: str,
     output_path: str,
     duration_s: int,
+    filter_args: list[str] | None = None,
 ) -> list[str]:
-    return [
+    cmd: list[str] = [
         procmon,
         "/AcceptEula",
         "/Quiet",
         "/Minimized",
-        "/BackingFile",
-        output_path,
-        "/Runtime",
-        str(duration_s),
     ]
+    if filter_args:
+        cmd.extend(filter_args)
+    cmd.extend(
+        [
+            "/BackingFile",
+            output_path,
+            "/Runtime",
+            str(duration_s),
+        ]
+    )
+    return cmd
 
 
 @mcp.tool()
@@ -127,12 +139,12 @@ def get_procmon_capture_commands(
 ) -> str:
     """Build the ``procmon.exe`` command to capture a trace.
 
-    Note: ProcMon's CLI cannot apply a recipe's filters without a
-    binary ``.pmc`` config. The emitted command uses the operator's
-    currently-saved filter set; the recipe descriptor must be loaded
-    via the GUI first OR generated to ``.pmc`` once via the GUI's
-    File -> Export Configuration. The block returned here documents
-    both options.
+    v0.2: the recipe's ``[Includes]`` / ``[Excludes]`` rules from the
+    ``.pmcx`` descriptor are translated to ``/Filter`` CLI args inline,
+    so no binary ``.pmc`` and no GUI step is required to apply the
+    filter. The previous ``/LoadConfig`` workflow (a deferral noted in
+    ASSUMPTIONS A2) is now optional -- it remains documented for
+    operators who already maintain a curated ``.pmc``.
 
     Args:
         recipe: Recipe short name (see ``list_procmon_recipes``).
@@ -158,18 +170,34 @@ def get_procmon_capture_commands(
             return binary
         procmon = str(binary)
 
-    cmdline = _capture_cmdline(procmon, recipe, output_path, duration_s)
+    # v0.2: parse the .pmcx descriptor into /Filter args.
+    descriptor_text = load_descriptor_text(meta)
+    rules = parse_pmcx_text(descriptor_text)
+    filter_args = rules_to_cli_args(rules)
+
+    cmdline = _capture_cmdline(
+        procmon, recipe, output_path, duration_s, filter_args=filter_args
+    )
+    inc_count = sum(1 for r in rules if r.include)
+    exc_count = sum(1 for r in rules if not r.include)
+    filter_note = (
+        f"Filter rules applied inline via `/Filter`: "
+        f"{inc_count} Include + {exc_count} Exclude "
+        f"(from `{meta.descriptor_filename}`). "
+        f"No GUI step or `.pmc` file is required."
+    )
     pmc_note = (
-        f"This command assumes the recipe filter set has already been "
-        f"loaded into ProcMon (either via GUI Filter -> Filter... and "
-        f"matching the entries in `{meta.descriptor_filename}`, or by "
-        f"generating a binary `.pmc` once via GUI and adding "
-        f"`/LoadConfig <path>.pmc` to the command above)."
+        "Optional: if you already maintain a binary `.pmc` for this "
+        f"host, you can add `/LoadConfig <path>.pmc` instead. The "
+        "rules emitted here are equivalent to the descriptor "
+        f"`{meta.descriptor_filename}`."
     )
     header = (
         f"**Capture command -- recipe `{recipe}`, target=`{target}`**\n"
         "\n"
         f"Duration: {duration_s}s. Output: `{output_path}`.\n"
+        "\n"
+        f"{filter_note}\n"
         "\n"
     )
     return header + remote_command_block(cmdline, note=pmc_note) + "\n"
@@ -213,16 +241,14 @@ def get_capture_instructions(
             "\n"
             "Run `check_sysinternals_setup` first.\n"
             "\n"
-            f"## 2. Load the recipe filter set\n"
+            f"## 2. Run the capture\n"
             "\n"
-            f"Open the ProcMon GUI once, Filter -> Filter..., and add "
-            f"the entries described by `get_procmon_recipe('{recipe}')`.\n"
-            "\n"
-            f"## 3. Run the capture\n"
+            "v0.2: the recipe's filter set is applied inline via "
+            "`/Filter` args, so no GUI step or `.pmc` file is needed.\n"
             "\n"
             + capture_cmd
             + "\n"
-            f"## 4. Analyze\n"
+            f"## 3. Analyze\n"
             "\n"
             f"After ProcMon exits, call "
             f"`analyze_pml(path='{output_path}')` to get a markdown "
@@ -237,41 +263,40 @@ def get_capture_instructions(
         "capture on a remote target, ship `procmon.exe` to that host, "
         "run the capture, and pull the resulting `.pml` back here for "
         "`analyze_pml`. The transport is up to you -- three "
-        "independent options:\n"
+        "independent options, in recommended order:\n"
         "\n"
+        "- **LabLink (recommended)**: an MCP exec transport that "
+        "exposes `push_file` / `execute_command` / `pull_file`. The "
+        "JSON sidecar block emitted by `get_procmon_capture_commands` "
+        "can be passed straight to `lablink.execute_command(node=..., "
+        "...)`. This server has no Python dependency on LabLink -- "
+        "it just emits the dispatch payload.\n"
         "- **PSRemoting**: `Copy-Item -ToSession`, "
-        "`Invoke-Command -ScriptBlock`. Built into Windows.\n"
-        "- **MCP exec transport** (e.g. LabLink, or any other agent "
-        "that exposes `push_file` / `execute_command`): use whichever "
-        "your environment provides. This server has no dependency on "
-        "any specific transport.\n"
+        "`Invoke-Command -ScriptBlock`. Built into Windows. Useful "
+        "when LabLink isn't deployed.\n"
         "- **Manual**: `\\\\<host>\\C$\\Sysinternals\\` SMB copy or "
         "`scp` / `rsync` over SSH.\n"
         "\n"
         f"## 1. Stage procmon.exe on the remote host\n"
         "\n"
         f"Copy `procmon.exe` (and `procmon64.exe` if 64-bit) to "
-        f"`C:\\Sysinternals\\` on the target.\n"
+        f"`C:\\Sysinternals\\` on the target. With LabLink: "
+        "`lablink.push_file(...)`.\n"
         "\n"
-        f"## 2. Pre-load the filter set\n"
+        f"## 2. Run the capture\n"
         "\n"
-        f"Once per host: open ProcMon GUI on the remote box, Filter "
-        f"-> Filter... add the entries from "
-        f"`get_procmon_recipe('{recipe}')`, then File -> Export "
-        f"Configuration -> `{recipe}.pmc`. Subsequent captures can "
-        f"add `/LoadConfig C:\\Sysinternals\\{recipe}.pmc` to skip "
-        "the GUI step.\n"
-        "\n"
-        f"## 3. Run the capture\n"
+        "v0.2: the recipe's filter set is baked into the command "
+        "below as `/Filter` args -- no GUI step needed.\n"
         "\n"
         + capture_cmd
         + "\n"
-        f"## 4. Pull the .pml back\n"
+        f"## 3. Pull the .pml back\n"
         "\n"
-        f"Whichever transport you chose, copy `{output_path}` back "
-        "to a path on your local machine.\n"
+        f"With LabLink: `lablink.pull_file(node, remote='{output_path}', "
+        "local='<your local path>')`. With PSRemoting: "
+        "`Copy-Item -FromSession`. With manual: SMB / scp.\n"
         "\n"
-        f"## 5. Analyze\n"
+        f"## 4. Analyze\n"
         "\n"
         f"`analyze_pml(path='<local copy of .pml>')` summarizes the "
         "trace -- top processes, event-class histogram, error "
