@@ -55,32 +55,30 @@ def test_no_lablink_mention_in_source_modules() -> None:
     """Even string literals shouldn't name LabLink as a default transport.
 
     The only acceptable mention is when a tool emits a *runbook* that
-    describes transport options (PSRemoting / LabLink / scp). Those
+    describes transport options (LabLink / PSRemoting / scp). Those
     runbooks are explicitly allowed because they're docs-as-tools, not
-    imports. We verify this by allowing the substring `LabLink` only
-    inside the allow-listed modules; every other source file must be
-    free of it.
+    imports. Specifically:
+
+    - Any file in ``tools/`` may mention LabLink because the
+      ``lablink_first_remote_block`` helper from ``tools/_common.py``
+      embeds "LabLink" as the recommended transport in its emitted
+      markdown.
+    - ``app.py`` may mention LabLink in its instructions string.
+    - No other module is allowed to.
     """
-    allowed = {
-        SRC_ROOT / "tools" / "procmon.py",
-        SRC_ROOT / "tools" / "setup.py",
-        SRC_ROOT / "tools" / "_common.py",  # v0.2 LabLink-first helper
-        SRC_ROOT / "tools" / "bootstrap.py",  # v0.2 bootstrap runbook
-        SRC_ROOT / "tools" / "eula_tool.py",  # v0.2 EULA-consent prompt
-        SRC_ROOT / "app.py",
-    }
     offenders: list[Path] = []
     for py in SRC_ROOT.rglob("*.py"):
-        if py in allowed:
+        if py.parent.name == "tools":
+            continue
+        if py == SRC_ROOT / "app.py":
             continue
         text = py.read_text(encoding="utf-8")
         if "lablink" in text.lower():
             offenders.append(py)
     assert offenders == [], (
-        "Only docs-as-tools modules (tools/procmon.py runbook, "
-        "tools/setup.py remote block, tools/_common.py LabLink-first "
-        "helper, tools/bootstrap.py, tools/eula_tool.py, app.py "
-        f"instructions) may mention LabLink. Offenders: {[str(p) for p in offenders]}"
+        "Only docs-as-tools modules (any file under tools/, plus "
+        "app.py instructions) may mention LabLink. "
+        f"Offenders: {[str(p) for p in offenders]}"
     )
 
 

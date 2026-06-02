@@ -18,6 +18,7 @@ import sysinternals_mcp.tools.sigcheck  # noqa: F401, E402
 import sysinternals_mcp.tools.pslist  # noqa: F401, E402
 import sysinternals_mcp.tools.accesschk  # noqa: F401, E402
 import sysinternals_mcp.tools.procmon  # noqa: F401, E402
+import sysinternals_mcp.tools.tcpvcon  # noqa: F401, E402  — v0.2
 import sysinternals_mcp.tools.evidence  # noqa: F401, E402  — optional evidence-store federation hook
 
 

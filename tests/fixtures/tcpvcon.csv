@@ -1,0 +1,9 @@
+TCP,System,4,LISTENING,0.0.0.0,445,0.0.0.0,0
+TCP,svchost.exe,852,LISTENING,0.0.0.0,135,0.0.0.0,0
+TCP,chrome.exe,7892,ESTABLISHED,10.0.0.5,55012,93.184.216.34,443
+TCP,chrome.exe,7892,ESTABLISHED,10.0.0.5,55013,140.82.114.4,443
+TCP,explorer.exe,4520,CLOSE_WAIT,10.0.0.5,55020,52.96.165.18,443
+TCPV6,System,4,LISTENING,[::],445,[::],0
+UDP,svchost.exe,852,*,0.0.0.0,5353,*,*
+UDP,svchost.exe,852,*,0.0.0.0,53,*,*
+UDPV6,svchost.exe,852,*,[::],5353,*,*
