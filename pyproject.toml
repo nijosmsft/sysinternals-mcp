@@ -1,7 +1,7 @@
 [project]
 name = "sysinternals-mcp"
-version = "0.1.0"
-description = "MCP server wrapping the Sysinternals tool suite (Handle, Sigcheck, PsList, AccessChk, ProcMon) for Windows process introspection, binary triage, and ACL audit"
+version = "0.2.0"
+description = "MCP server wrapping the Sysinternals tool suite (Handle, Sigcheck, PsList, AccessChk, ProcMon, TcpVcon, AutoRuns, CoreInfo, PsInfo, ListDLLs, ProcDump, Strings) with bootstrap installer + LabLink-first remote dispatch"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
