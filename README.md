@@ -26,7 +26,6 @@ your install directory.
 | Crash dumps   | `procdump`, `parse_procdump_output`                                                                                |
 | Strings       | `strings`, `parse_strings_output`                                                                                  |
 | ProcMon       | `list_procmon_recipes`, `get_procmon_recipe`, `get_procmon_capture_commands`, `get_capture_instructions`, `analyze_pml` |
-| Federation    | `get_evidence_status`, `get_entities`                                                                              |
 
 Every live-execute tool takes a `target` argument:
 
@@ -76,7 +75,7 @@ the registry probe report a clean state).
 # Install uv if you have not already.
 winget install astral-sh.uv
 
-# Clone + run from source for now.
+# Clone + run from source.
 git clone https://github.com/nijosmsft/sysinternals-mcp C:\git\sysinternals-mcp
 cd C:\git\sysinternals-mcp
 uv sync
@@ -105,9 +104,8 @@ Cursor / Copilot CLI, and `servers` for VS Code GitHub Copilot.
 
 ## Bootstrap install
 
-The `bootstrap_sysinternals` tool is the v0.2 headline feature — it
-lets an LLM walk the user through installing the suite without leaving
-the chat.
+The `bootstrap_sysinternals` tool lets an LLM walk the user through
+installing the suite without leaving the chat.
 
 ```text
 bootstrap_sysinternals(target="local",
@@ -140,7 +138,6 @@ Bypass the prompt for a whole session by setting
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `SYSINTERNALS_MCP_DIR`           | Directory containing the Sysinternals binaries. Searched first; falls back to PATH and default paths.   |
 | `SYSINTERNALS_MCP_ACCEPT_EULA`   | Set to `1` to pre-accept the EULA at server startup — `bootstrap_sysinternals` skips the consent block. |
-| `SYSINTERNALS_MCP_EVIDENCE_PATH` | (Optional) Root for the per-machine `evidence.duckdb`. Enables `get_entities` when the lib is present.  |
 
 When `SYSINTERNALS_MCP_DIR` is unset the server probes (in order):
 
@@ -205,11 +202,9 @@ Three bundled filter recipes:
 - `network_only` — TCP/UDP send + receive
 - `process_lifecycle` — process/thread create + exit
 
-Each recipe is a small text descriptor. **As of v0.2** the descriptor
-rules are translated into ProcMon `/Filter` CLI arguments and spliced
-into the capture command line directly — no manual
-**File → Import Configuration** step is required. See `ASSUMPTIONS.md`
-A2 for details.
+Each recipe is a small text descriptor. The descriptor rules are
+translated into ProcMon `/Filter` CLI arguments and spliced into the
+capture command line directly.
 
 ## Local development
 
