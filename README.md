@@ -32,7 +32,8 @@ Every live-execute tool takes a `target` argument:
 
 - `target="local"` — the server runs the Sysinternals binary as a
   subprocess on the local machine and returns the parsed markdown.
-- `target="remote"` — the server returns a *LabLink-first dispatch*
+- `target="remote"` — the server returns a
+  *[LabLink](https://github.com/nijosmsft/LabLink)-first dispatch*
   block: a fenced ```powershell``` command, a recommended transport
   order (LabLink → PSRemoting → manual paste), and a JSON sidecar an
   LLM can hand straight to any MCP that actually has remote-exec
@@ -153,10 +154,13 @@ server is running, restart the server.
 
 ## Remote workflows
 
-`sysinternals-mcp` is transport-agnostic but **opinionated about
-LabLink**: every `target="remote"` tool emits a recommended-dispatch
-order with LabLink first, plus a JSON sidecar that an LLM can hand
-straight to LabLink's `lablink.execute_command`. The pattern is:
+[LabLink](https://github.com/nijosmsft/LabLink) is a lightweight
+Go-based MCP server for remote command execution against Windows lab
+machines. `sysinternals-mcp` is transport-agnostic but **opinionated
+about LabLink**: every `target="remote"` tool emits a
+recommended-dispatch order with LabLink first, plus a JSON sidecar
+that an LLM can hand straight to LabLink's `lablink.execute_command`.
+The pattern is:
 
 1. Call the live tool with `target="remote"` to get the dispatch
    block (markdown + JSON sidecar).

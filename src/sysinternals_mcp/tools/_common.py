@@ -199,7 +199,8 @@ def lablink_first_remote_block(
     out = [
         "**Recommended dispatch:** LabLink (then PSRemoting, then manual paste).",
         "",
-        "1. **LabLink (preferred)** — pass the JSON sidecar below to "
+        "1. **[LabLink](https://github.com/nijosmsft/LabLink) "
+        "(preferred)** — pass the JSON sidecar below to "
         "`lablink.execute_command(node=<your-node>, ...)`.",
         "2. **PSRemoting** — `Invoke-Command -ComputerName <host> "
         "-ScriptBlock { ... }` with the command body.",
