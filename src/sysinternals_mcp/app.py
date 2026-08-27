@@ -1,6 +1,6 @@
 """FastMCP application instance — imported by all tool modules."""
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 mcp = FastMCP(
     "sysinternals-mcp",
@@ -67,3 +67,27 @@ mcp = FastMCP(
         "paste. The server keeps zero coupling -- enforced by test."
     ),
 )
+
+
+# --- FastMCP 1.x -> 2.x compatibility shim -------------------------------
+# The bundled ``mcp.server.fastmcp`` (FastMCP 1.x) ``@mcp.tool()`` decorator
+# returned the *original* function, so tool modules and the test-suite call
+# the decorated functions directly (e.g. ``handle_list(...)``). The
+# standalone ``fastmcp`` (2.x) decorator instead replaces the name with a
+# non-callable ``FunctionTool`` object. Wrap ``mcp.tool`` so it still
+# registers the tool with FastMCP but returns the plain callable, keeping
+# tool names/behavior identical for both MCP clients and direct callers.
+_fastmcp_tool = mcp.tool
+
+
+def _tool_compat(*args, **kwargs):
+    decorator = _fastmcp_tool(*args, **kwargs)
+
+    def register(fn):
+        decorator(fn)  # register with FastMCP's tool manager (side effect)
+        return fn       # keep the plain function bound to the module name
+
+    return register
+
+
+mcp.tool = _tool_compat
