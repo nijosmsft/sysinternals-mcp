@@ -1,8 +1,41 @@
 """FastMCP application instance — imported by all tool modules."""
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
-mcp = FastMCP(
+
+class _SysinternalsFastMCP(FastMCP):
+    """FastMCP whose ``@tool()`` returns the original function.
+
+    FastMCP 2.x replaces a decorated function with a non-callable
+    ``FunctionTool`` object, whereas the ``mcp.server.fastmcp`` 1.x decorator
+    returned the underlying function untouched. Every tool module here (and the
+    test-suite) relies on that 1.x behaviour: the ``target='remote'`` wrappers
+    and ``parse_*`` helpers call the decorated ``@mcp.tool()`` functions
+    straight through, and the tests invoke the decorated callables directly.
+    Overriding ``tool`` to register with the server (the side effect) and then
+    hand back the original function preserves that contract while still running
+    on the standalone fastmcp package.
+    """
+
+    def tool(self, *args, **kwargs):
+        # ``@mcp.tool`` (bare decorator) and ``mcp.tool(fn)`` (bare direct
+        # call): a single positional callable and no name/kwargs.
+        if len(args) == 1 and callable(args[0]) and not kwargs:
+            super().tool(args[0])
+            return args[0]
+
+        # ``@mcp.tool(...)`` factory form. Register via the bare form
+        # (``super().tool(fn, **opts)``) rather than ``super().tool(**opts)(fn)``:
+        # the latter returns a partial re-bound to this overridden ``tool``, which
+        # never actually registers the function with the server.
+        def decorator(fn):
+            super(_SysinternalsFastMCP, self).tool(fn, *args, **kwargs)
+            return fn
+
+        return decorator
+
+
+mcp = _SysinternalsFastMCP(
     "sysinternals-mcp",
     instructions=(
         "Wrap the Microsoft Sysinternals tool suite for Windows process "
