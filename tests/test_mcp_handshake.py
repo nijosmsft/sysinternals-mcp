@@ -19,10 +19,18 @@ from sysinternals_mcp.app import mcp
 
 
 def test_app_uses_standalone_fastmcp() -> None:
-    # The shared app instance must come from the standalone ``fastmcp``
+    # The shared app instance must build on the standalone ``fastmcp``
     # package, not the removed bundled ``mcp.server.fastmcp`` module.
+    from sysinternals_mcp import app
+
     assert isinstance(mcp, fastmcp.FastMCP)
-    assert type(mcp).__module__.split(".", 1)[0] == "fastmcp"
+
+    # The ``FastMCP`` name bound in app.py must resolve to the standalone
+    # package, and the shim subclass must inherit from it.
+    assert app.FastMCP.__module__.split(".", 1)[0] == "fastmcp"
+    base = app._SysinternalsFastMCP.__bases__[0]
+    assert base.__name__ == "FastMCP"
+    assert base.__module__.split(".", 1)[0] == "fastmcp"
 
 
 def test_initialize_and_tools_list_handshake() -> None:

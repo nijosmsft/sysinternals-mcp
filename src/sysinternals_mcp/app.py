@@ -2,7 +2,40 @@
 
 from fastmcp import FastMCP
 
-mcp = FastMCP(
+
+class _SysinternalsFastMCP(FastMCP):
+    """FastMCP whose ``@tool()`` returns the original function.
+
+    FastMCP 2.x replaces a decorated function with a non-callable
+    ``FunctionTool`` object, whereas the ``mcp.server.fastmcp`` 1.x decorator
+    returned the underlying function untouched. Every tool module here (and the
+    test-suite) relies on that 1.x behaviour: the ``target='remote'`` wrappers
+    and ``parse_*`` helpers call the decorated ``@mcp.tool()`` functions
+    straight through, and the tests invoke the decorated callables directly.
+    Overriding ``tool`` to register with the server (the side effect) and then
+    hand back the original function preserves that contract while still running
+    on the standalone fastmcp package.
+    """
+
+    def tool(self, *args, **kwargs):
+        # ``@mcp.tool`` (bare decorator) and ``mcp.tool(fn)`` (bare direct
+        # call): a single positional callable and no name/kwargs.
+        if len(args) == 1 and callable(args[0]) and not kwargs:
+            super().tool(args[0])
+            return args[0]
+
+        # ``@mcp.tool(...)`` factory form. Register via the bare form
+        # (``super().tool(fn, **opts)``) rather than ``super().tool(**opts)(fn)``:
+        # the latter returns a partial re-bound to this overridden ``tool``, which
+        # never actually registers the function with the server.
+        def decorator(fn):
+            super(_SysinternalsFastMCP, self).tool(fn, *args, **kwargs)
+            return fn
+
+        return decorator
+
+
+mcp = _SysinternalsFastMCP(
     "sysinternals-mcp",
     instructions=(
         "Wrap the Microsoft Sysinternals tool suite for Windows process "
@@ -67,27 +100,3 @@ mcp = FastMCP(
         "paste. The server keeps zero coupling -- enforced by test."
     ),
 )
-
-
-# --- FastMCP 1.x -> 2.x compatibility shim -------------------------------
-# The bundled ``mcp.server.fastmcp`` (FastMCP 1.x) ``@mcp.tool()`` decorator
-# returned the *original* function, so tool modules and the test-suite call
-# the decorated functions directly (e.g. ``handle_list(...)``). The
-# standalone ``fastmcp`` (2.x) decorator instead replaces the name with a
-# non-callable ``FunctionTool`` object. Wrap ``mcp.tool`` so it still
-# registers the tool with FastMCP but returns the plain callable, keeping
-# tool names/behavior identical for both MCP clients and direct callers.
-_fastmcp_tool = mcp.tool
-
-
-def _tool_compat(*args, **kwargs):
-    decorator = _fastmcp_tool(*args, **kwargs)
-
-    def register(fn):
-        decorator(fn)  # register with FastMCP's tool manager (side effect)
-        return fn       # keep the plain function bound to the module name
-
-    return register
-
-
-mcp.tool = _tool_compat
