@@ -1,6 +1,6 @@
 [project]
 name = "sysinternals-mcp"
-version = "0.2.0"
+version = "0.2.1"
 description = "MCP server wrapping the Sysinternals tool suite (Handle, Sigcheck, PsList, AccessChk, ProcMon, TcpVcon, AutoRuns, CoreInfo, PsInfo, ListDLLs, ProcDump, Strings) with bootstrap installer + LabLink-first remote dispatch"
 readme = "README.md"
 license = {text = "MIT"}

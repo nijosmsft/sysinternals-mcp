@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-27
+
+### Fixed
+- Migrated to standalone `fastmcp` package (`fastmcp>=2.14.7,<3`);
+  fixes startup crash under mcp SDK v2 where `mcp.server.fastmcp` was removed.
+- Added callable-preserving shim covering all three tool-decorator forms
+  (bare `@mcp.tool`, `@mcp.tool()`, `@mcp.tool(name=...)`) to match fleet pattern.
+- Closes [mcp-servers#39](https://github.com/nijosmsft/mcp-servers/issues/39).
+
 ### Changed
 - README: rewrote the Bootstrap section and the ProcMon recipes section
   in present tense — removed sprint-release framing.
